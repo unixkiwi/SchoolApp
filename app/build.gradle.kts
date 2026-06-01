@@ -24,16 +24,20 @@ android {
     }
 
     buildTypes {
-        getByName("debug") {
-            isDebuggable = true
-        }
-
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            optimization {
+                enable = false
+            }
+            isDebuggable = false
+        }
+
+        debug {
+            isDebuggable = true
         }
     }
     compileOptions {
@@ -42,6 +46,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -67,6 +72,7 @@ dependencies {
     implementation(libs.logging.interceptor)
     implementation(libs.moshi.kotlin)
     implementation(libs.retrofit)
+    implementation(libs.timber)
     ksp(libs.hilt.android.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
