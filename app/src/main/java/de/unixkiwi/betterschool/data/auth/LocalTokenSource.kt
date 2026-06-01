@@ -1,6 +1,5 @@
 package de.unixkiwi.betterschool.data.auth
 
-import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -8,6 +7,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import timber.log.Timber
 
 class LocalTokenSource(
     private val dataStore: DataStore<Preferences>,
@@ -31,7 +31,7 @@ class LocalTokenSource(
     }
 
     suspend fun getToken(): String? {
-        Log.d(TAG, "getToken called")
+        Timber.tag(TAG).d("getToken called")
         return dataStore.data
             .map { prefs ->
                 prefs[TOKEN_KEY]?.let { cryptoManager.decrypt(it) }
@@ -39,20 +39,18 @@ class LocalTokenSource(
     }
 
     suspend fun isTokenExpired(): Boolean {
-        Log.d(TAG, "isTokenExpired called")
+        Timber.tag(TAG).d("isTokenExpired called")
         val expiryTime = dataStore.data
             .map { prefs -> prefs[TOKEN_EXPIRY_KEY] }
             .firstOrNull()
 
         return if (expiryTime != null) {
             val isExpired = System.currentTimeMillis() >= expiryTime
-            Log.d(
-                TAG,
-                "Token expiry check: current=${System.currentTimeMillis()}, expiry=$expiryTime, isExpired=$isExpired"
-            )
+            Timber.tag(TAG)
+                .d("Token expiry check: current=${System.currentTimeMillis()}, expiry=$expiryTime, isExpired=$isExpired")
             isExpired
         } else {
-            Log.w(TAG, "No expiry time stored, assuming token is not expired")
+            Timber.tag(TAG).w("No expiry time stored, assuming token is not expired")
             false
         }
     }

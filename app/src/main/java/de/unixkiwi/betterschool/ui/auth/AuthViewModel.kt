@@ -1,7 +1,6 @@
 package de.unixkiwi.betterschool.ui.auth
 
 import android.content.Intent
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -12,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import net.openid.appauth.AuthorizationException
 import net.openid.appauth.AuthorizationResponse
+import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -26,21 +26,21 @@ class AuthViewModel @Inject constructor(
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
     init {
-        Log.d(TAG, "init called")
+        Timber.tag(TAG).d("init called")
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
             runCatching { authRepo.isTokenLocally() }
                 .onSuccess { hasToken ->
                     _uiState.value = if (hasToken) {
-                        Log.i(TAG, "hasToken = true")
+                        Timber.tag(TAG).i("hasToken = true")
                         AuthUiState.Success(authRepo.getToken() ?: "null :(")
                     } else {
-                        Log.i(TAG, "hasToken = false")
+                        Timber.tag(TAG).i("hasToken = false")
                         AuthUiState.Idle
                     }
                 }
                 .onFailure { throwable ->
-                    Log.e(TAG, "init failed", throwable)
+                    Timber.tag(TAG).e(throwable, "init failed")
                     _uiState.value = AuthUiState.Error(throwable)
                 }
         }
@@ -51,7 +51,7 @@ class AuthViewModel @Inject constructor(
             runCatching { authRepo.createAuthRequestIntent() }
                 .onSuccess(onIntentReady)
                 .onFailure { throwable ->
-                    Log.e(TAG, "Failed to create auth intent", throwable)
+                    Timber.tag(TAG).e(throwable, "Failed to create auth intent")
                     _uiState.value = AuthUiState.Error(throwable)
                 }
         }
@@ -65,7 +65,7 @@ class AuthViewModel @Inject constructor(
                         AuthUiState.Error(Throwable("Token is: ${authRepo.getToken()}"))
                 }
                 .onFailure { throwable ->
-                    Log.e(TAG, "Failed to clear token", throwable)
+                    Timber.tag(TAG).e(throwable, "Failed to clear token")
                 }
         }
     }
@@ -75,7 +75,7 @@ class AuthViewModel @Inject constructor(
     }
 
     fun handleAuthResult(data: Intent?) {
-        Log.d(TAG, "data: $data")
+        Timber.tag(TAG).d("data: $data")
 
         if (data == null) {
             _uiState.value =
@@ -85,7 +85,7 @@ class AuthViewModel @Inject constructor(
 
         val ex = AuthorizationException.fromIntent(data)
         if (ex != null) {
-            Log.e(TAG, "Authorization failed: ${ex.error} (${ex.errorDescription})", ex)
+            Timber.tag(TAG).e(ex, "Authorization failed: ${ex.error} (${ex.errorDescription})")
             _uiState.value = AuthUiState.Error(ex)
             return
         }
@@ -104,7 +104,7 @@ class AuthViewModel @Inject constructor(
                     _uiState.value = AuthUiState.Success(authRepo.getToken() ?: "null :(")
                 }
                 .onFailure { throwable ->
-                    Log.e(TAG, "Token exchange invocation failed", throwable)
+                    Timber.tag(TAG).e(throwable, "Token exchange invocation failed")
                     _uiState.value = AuthUiState.Error(throwable)
                 }
         }

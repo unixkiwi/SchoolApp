@@ -1,7 +1,6 @@
 package de.unixkiwi.betterschool.ui.auth
 
 import android.app.Activity
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import timber.log.Timber
 
 @Composable
 fun AuthScreen(onSuccessfulLogin: () -> Unit, viewModel: AuthViewModel = hiltViewModel()) {
@@ -28,7 +28,7 @@ fun AuthScreen(onSuccessfulLogin: () -> Unit, viewModel: AuthViewModel = hiltVie
             if (result.resultCode == Activity.RESULT_OK) {
                 viewModel.handleAuthResult(result.data)
             } else {
-                Log.e("AuthScreen", "Intent result code: ${result.resultCode}")
+                Timber.tag("AuthScreen").e("Intent result code: ${result.resultCode}")
                 viewModel.onLoginCanceled(result.resultCode)
             }
         }

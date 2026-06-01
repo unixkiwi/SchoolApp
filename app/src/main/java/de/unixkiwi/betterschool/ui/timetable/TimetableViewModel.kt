@@ -1,6 +1,5 @@
 package de.unixkiwi.betterschool.ui.timetable
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.toJavaLocalDate
+import timber.log.Timber
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -37,17 +37,18 @@ class TimetableViewModel @Inject constructor(
     }
 
     fun updateWeek(week: WeekString, isGoBackAction: Boolean = false) {
-        Log.d(TAG, "updateWeek called with week: $week, isGoBackAction: $isGoBackAction")
+        Timber.tag(TAG).d("updateWeek called with week: $week, isGoBackAction: $isGoBackAction")
         viewModelScope.launch {
             _uiState.value = TimetableUiState.Loading
             runCatching { authRepo.getToken() }
                 .onSuccess { token ->
-                    Log.i(TAG, "Got token")
+                    Timber.tag(TAG).i("Got token")
                     if (token != null) {
                         runCatching { authRepo.isTokenExpired() }
                             .onSuccess { isExpired ->
                                 if (isExpired) {
-                                    Log.w(TAG, "Token has expired, user needs to re-authenticate")
+                                    Timber.tag(TAG)
+                                        .w("Token has expired, user needs to re-authenticate")
                                     _uiState.value = TimetableUiState.Error(
                                         IllegalStateException("Token expired, please log in again")
                                     )
@@ -55,7 +56,7 @@ class TimetableViewModel @Inject constructor(
                                 }
 
                                 runCatching {
-                                    Log.d(TAG, "Requesting data for $week")
+                                    Timber.tag(TAG).d("Requesting data for $week")
                                     timetableRepository.getWeek(
                                         week.toString(),
                                         authToken = "Bearer $token"
@@ -84,23 +85,23 @@ class TimetableViewModel @Inject constructor(
                                             TimetableUiState.Success(groupedWeek, index)
                                     }
                                     .onFailure { throwable ->
-                                        Log.e(TAG, "updateWeek failed", throwable)
+                                        Timber.tag(TAG).e(throwable, "updateWeek failed")
                                         _uiState.value = TimetableUiState.Error(throwable)
                                     }
                             }
                             .onFailure { throwable ->
-                                Log.e(TAG, "failed to check token expiry", throwable)
+                                Timber.tag(TAG).e(throwable, "failed to check token expiry")
                                 _uiState.value = TimetableUiState.Error(throwable)
                                 return@launch
                             }
                     } else {
-                        Log.w(TAG, "received token was null")
+                        Timber.tag(TAG).w("received token was null")
                         _uiState.value =
                             TimetableUiState.Error(IllegalStateException("received token was null"))
                     }
                 }
                 .onFailure { throwable ->
-                    Log.e(TAG, "failed to retrieve token", throwable)
+                    Timber.tag(TAG).e(throwable, "failed to retrieve token")
                     _uiState.value = TimetableUiState.Error(throwable)
                     return@launch
                 }
@@ -113,7 +114,7 @@ class TimetableViewModel @Inject constructor(
             val currentWeek = currentState.week
             val firstDay = currentWeek.days.firstOrNull()?.date
             val previousWeek = if (firstDay == null) {
-                Log.w(TAG, "Current week has no days, settings to week before current")
+                Timber.tag(TAG).w("Current week has no days, settings to week before current")
                 WeekString.fromDateSmart(LocalDate.now()).previousWeek()
             } else {
                 WeekString.fromDate(firstDay.toJavaLocalDate()).previousWeek()
@@ -128,7 +129,7 @@ class TimetableViewModel @Inject constructor(
             val currentWeek = currentState.week
             val firstDay = currentWeek.days.firstOrNull()?.date
             val previousWeek = if (firstDay == null) {
-                Log.w(TAG, "Current week has no days, settings to week before current")
+                Timber.tag(TAG).w("Current week has no days, settings to week before current")
                 WeekString.fromDateSmart(LocalDate.now()).nextWeek()
             } else {
                 WeekString.fromDate(firstDay.toJavaLocalDate()).nextWeek()
@@ -138,7 +139,7 @@ class TimetableViewModel @Inject constructor(
     }
 
     init {
-        Log.d(TAG, "init called")
+        Timber.tag(TAG).d("init called")
         updateWeek(WeekString.fromDateSmart(LocalDate.now()))
     }
 }

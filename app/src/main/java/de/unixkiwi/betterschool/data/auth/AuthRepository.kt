@@ -1,7 +1,6 @@
 package de.unixkiwi.betterschool.data.auth
 
 import android.content.Intent
-import android.util.Log
 import androidx.core.net.toUri
 import de.unixkiwi.betterschool.core.AUTHORIZE_URI
 import de.unixkiwi.betterschool.core.CLIENT_ID
@@ -14,6 +13,7 @@ import net.openid.appauth.AuthorizationService
 import net.openid.appauth.AuthorizationServiceConfiguration
 import net.openid.appauth.CodeVerifierUtil
 import net.openid.appauth.ResponseTypeValues
+import timber.log.Timber
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -44,21 +44,21 @@ class AuthRepository(
     }
 
     suspend fun isTokenLocally(): Boolean {
-        Log.d(TAG, "isTokenLocally called!")
+        Timber.tag(TAG).d("isTokenLocally called!")
         val token: String? = localTokenSource.getToken()
-        Log.d(TAG, "called getToken!")
+        Timber.tag(TAG).d("called getToken!")
         return !token.isNullOrEmpty()
     }
 
     suspend fun getToken(): String? {
-        Log.d(TAG, "getToken() called!")
+        Timber.tag(TAG).d("getToken() called!")
         return localTokenSource.getToken()
     }
 
     suspend fun clearToken() {
-        Log.d(TAG, "clearToken() called")
+        Timber.tag(TAG).d("clearToken() called")
         localTokenSource.clearToken()
-        Log.w(TAG, "Cleared token!")
+        Timber.tag(TAG).w("Cleared token!")
     }
 
     suspend fun isTokenExpired(): Boolean {
@@ -74,13 +74,13 @@ class AuthRepository(
 
                 when {
                     ex != null -> {
-                        Log.e(TAG, "Msg: $ex")
+                        Timber.tag(TAG).e("Msg: $ex")
                         cont.resumeWithException(ex)
                     }
 
                     res?.accessToken != null -> {
                         val expiryTime = res.accessTokenExpirationTime
-                        Log.d(TAG, "Token received with expiry time: $expiryTime")
+                        Timber.tag(TAG).d("Token received with expiry time: $expiryTime")
                         cont.resume(Pair(res.accessToken!!, expiryTime))
                     }
 
