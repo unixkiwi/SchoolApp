@@ -8,9 +8,11 @@ import de.unixkiwi.betterschool.data.auth.AuthRepository
 import de.unixkiwi.betterschool.data.timetable.TimetableRepository
 import de.unixkiwi.betterschool.data.timetable.groupedForTimetable
 import de.unixkiwi.betterschool.utils.WeekString
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.toJavaLocalDate
 import timber.log.Timber
@@ -38,73 +40,33 @@ class TimetableViewModel @Inject constructor(
 
     fun updateWeek(week: WeekString, isGoBackAction: Boolean = false) {
         Timber.tag(TAG).d("updateWeek called with week: $week, isGoBackAction: $isGoBackAction")
-        viewModelScope.launch {
-            _uiState.value = TimetableUiState.Loading
-            runCatching { authRepo.getToken() }
-                .onSuccess { token ->
-                    Timber.tag(TAG).i("Got token")
-                    if (token != null) {
-                        runCatching { authRepo.isTokenExpired() }
-                            .onSuccess { isExpired ->
-                                if (isExpired) {
-                                    Timber.tag(TAG)
-                                        .w("Token has expired, user needs to re-authenticate")
-                                    _uiState.value = TimetableUiState.Error(
-                                        IllegalStateException("Token expired, please log in again")
-                                    )
-                                    return@launch
-                                }
+        viewModelScope.launch(Dispatchers.Default) {
+            timetableRepository.getWeek(week.toString()).collect { result ->
+                result.onSuccess { week ->
+                    val groupedWeek = week.groupedForTimetable()
 
-                                runCatching {
-                                    Timber.tag(TAG).d("Requesting data for $week")
-                                    timetableRepository.getWeek(
-                                        week.toString(),
-                                        authToken = "Bearer $token"
-                                    )
-                                }
-                                    .onSuccess { weekResult ->
-                                        val groupedWeek = weekResult.groupedForTimetable()
+                    val now = LocalDate.now()
 
-                                        val now = LocalDate.now()
-
-                                        val index = if (week == WeekString.fromDateSmart(now)) {
-                                            if (now.dayOfWeek.value >= 6) {
-                                                0
-                                            } else {
-                                                now.dayOfWeek.value - 1
-                                            }
-                                        } else {
-                                            if (isGoBackAction) {
-                                                groupedWeek.days.size - 1
-                                            } else {
-                                                0
-                                            }
-                                        }
-
-                                        _uiState.value =
-                                            TimetableUiState.Success(groupedWeek, index)
-                                    }
-                                    .onFailure { throwable ->
-                                        Timber.tag(TAG).e(throwable, "updateWeek failed")
-                                        _uiState.value = TimetableUiState.Error(throwable)
-                                    }
-                            }
-                            .onFailure { throwable ->
-                                Timber.tag(TAG).e(throwable, "failed to check token expiry")
-                                _uiState.value = TimetableUiState.Error(throwable)
-                                return@launch
-                            }
+                    val index = if (week == WeekString.fromDateSmart(now)) {
+                        if (now.dayOfWeek.value >= 6) {
+                            0
+                        } else {
+                            now.dayOfWeek.value - 1
+                        }
                     } else {
-                        Timber.tag(TAG).w("received token was null")
-                        _uiState.value =
-                            TimetableUiState.Error(IllegalStateException("received token was null"))
+                        if (isGoBackAction) {
+                            groupedWeek.days.size - 1
+                        } else {
+                            0
+                        }
                     }
+
+                    _uiState.update { TimetableUiState.Success(groupedWeek, index) }
+                }.onFailure { throwable ->
+                    Timber.tag(TAG).e(throwable, "updateWeek failed")
+                    _uiState.update { TimetableUiState.Error(throwable) }
                 }
-                .onFailure { throwable ->
-                    Timber.tag(TAG).e(throwable, "failed to retrieve token")
-                    _uiState.value = TimetableUiState.Error(throwable)
-                    return@launch
-                }
+            }
         }
     }
 
@@ -146,6 +108,8 @@ class TimetableViewModel @Inject constructor(
 
 sealed interface TimetableUiState {
     data object Loading : TimetableUiState
-    data class Success(val week: SchoolWeek, val index: Int) : TimetableUiState
+    data class Success(val week: SchoolWeek, val index: Int /*TODO: , val isLoading: Boolean*/) :
+        TimetableUiState
+
     data class Error(val error: Throwable) : TimetableUiState
 }

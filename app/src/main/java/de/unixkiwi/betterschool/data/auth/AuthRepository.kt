@@ -55,6 +55,12 @@ class AuthRepository(
         return localTokenSource.getToken()
     }
 
+    suspend fun getAuthHeader(): String? {
+        val token = getToken()
+        if (token.isNullOrBlank()) return null
+        return if (token.startsWith("Bearer ")) token else "Bearer $token"
+    }
+
     suspend fun clearToken() {
         Timber.tag(TAG).d("clearToken() called")
         localTokenSource.clearToken()

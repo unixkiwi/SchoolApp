@@ -3,10 +3,9 @@ package de.unixkiwi.betterschool.data.year
 import de.unixkiwi.betterschool.core.local.ApiCacheFileManager
 import de.unixkiwi.betterschool.data.auth.AuthRepository
 import de.unixkiwi.betterschool.utils.now
-import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.plus
 import kotlinx.serialization.json.Json
+import timber.log.Timber
 
 class YearsRepository(
     private val remote: RemoteYearSource,
@@ -33,21 +32,23 @@ class YearsRepository(
     }
 
     suspend fun getYears(forceRefresh: Boolean = false): Result<List<BesteSchuleYear>> {
-        val shouldUseRemote = !forceRefresh && LocalDate.now < lastCache.plus(3, DateTimeUnit.DAY)
+        val shouldUseRemote =
+            forceRefresh //FIXME nonsense && LocalDate.now < lastCache.plus(3, DateTimeUnit.DAY)
 
         if (shouldUseRemote) {
             try {
-                val token = authRepo.getToken()
-                return if (token.isNullOrEmpty()) {
+                val authHeader = authRepo.getAuthHeader()
+                return if (authHeader.isNullOrEmpty()) {
                     Result.failure(Throwable("Token was null!"))
                 } else {
                     lastCache = LocalDate.now
-                    val years = remote.getYears(token).data
+                    val years = remote.getYears(authHeader).data
                     if (years.isNotEmpty()) cache.store(cacheKey, Json.encodeToString(years))
 
                     Result.success(years)
                 }
             } catch (e: Exception) {
+                Timber.e("Error while getting year from remote: $e")
                 return Result.failure(e)
             }
         } else {

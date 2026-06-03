@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
 }
@@ -71,7 +72,6 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.datastore)
     implementation(libs.androidx.datastore.tink)
-    implementation(libs.jetbrains.kotlinx.datetime)
     implementation(libs.kotlinx.datetime)
     implementation(libs.logging.interceptor)
     implementation(libs.moshi.kotlin)

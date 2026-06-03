@@ -1,5 +1,8 @@
 package de.unixkiwi.betterschool.core.models
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class SchoolLessonStatus(val apiValue: String) {
     INITIAL("initial"),
     PLANNED("planned"),
@@ -12,4 +15,3 @@ enum class SchoolLessonStatus(val apiValue: String) {
         }
     }
 }
-

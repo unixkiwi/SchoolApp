@@ -1,7 +1,9 @@
 package de.unixkiwi.betterschool.data.year
 
 import kotlinx.datetime.LocalDate
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class BesteSchuleYear(
     val id: Int,
     val name: String,
