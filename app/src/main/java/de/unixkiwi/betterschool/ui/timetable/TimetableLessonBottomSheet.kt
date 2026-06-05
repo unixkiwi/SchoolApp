@@ -112,6 +112,36 @@ fun TimetableListItemBottomSheet(
                     modifier = Modifier.padding(horizontal = 0.dp)
                 )
             }
+
+            if (lesson.notes.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            TimetableListItemBottomSheetSection(
+                title = "Notes",
+                items = lesson.notes,
+            ) { note, index, count ->
+                ListItem(
+                    shapes = if (count == 1) {
+                        ListItemDefaults.shapes(shape = MaterialTheme.shapes.large)
+                    } else {
+                        ListItemDefaults.segmentedShapes(
+                            index = index,
+                            count = count
+                        )
+                    },
+                    colors = ListItemDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                    ),
+                    onClick = {},
+                    content = {
+                        Text(note.description, style = MaterialTheme.typography.bodyLarge)
+                    },
+                    overlineContent = {
+                        Text(note.type, style = MaterialTheme.typography.bodyMedium)
+                    }
+                )
+            }
         }
     }
 }
