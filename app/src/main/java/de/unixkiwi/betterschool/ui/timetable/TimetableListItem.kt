@@ -191,7 +191,26 @@ fun TimetableListItem(
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Text(
-                                        "More lessons",
+                                        "+${lesson.subLessons.size} ${if (lesson.subLessons.size > 1) "lessons" else "lesson"}",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        modifier = Modifier.padding(start = 4.dp, end = 8.dp)
+                                    )
+                                }
+                            }
+                        }
+                        if (lesson.notes.isNotEmpty()) {
+                            item {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Start
+                                ) {
+                                    Icon(
+                                        painterResource(R.drawable.notes_24px),
+                                        null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        "${lesson.notes.size} ${if (lesson.notes.size > 1) "notes" else "note"}",
                                         style = MaterialTheme.typography.bodyLarge,
                                         modifier = Modifier.padding(start = 4.dp, end = 8.dp)
                                     )
