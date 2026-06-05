@@ -14,10 +14,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.toJavaLocalDate
 import timber.log.Timber
 import java.time.LocalDate
 import javax.inject.Inject
+import kotlin.math.min
 
 @HiltViewModel
 class TimetableViewModel @Inject constructor(
@@ -38,31 +38,66 @@ class TimetableViewModel @Inject constructor(
         }
     }
 
-    fun updateWeek(weekString: WeekString, isGoBackAction: Boolean = false) {
+    fun goToCurrentDay() {
+        updateWeek(
+            WeekString.fromDateSmart(LocalDate.now()),
+            isGoBackAction = false,
+            forceRefresh = false
+        )
+    }
+
+    fun updateCurrentWeek() {
+        val currentState = _uiState.value
+        if (currentState is TimetableUiState.Success) {
+            updateWeek(
+                currentState.weekString,
+                isGoBackAction = false,
+                forceRefresh = true,
+                requestedIndex = currentState.index
+            )
+        } else {
+            updateWeek(
+                WeekString.fromDateSmart(LocalDate.now()),
+                isGoBackAction = false,
+                forceRefresh = true
+            )
+        }
+    }
+
+    fun updateWeek(
+        weekString: WeekString,
+        isGoBackAction: Boolean = false,
+        forceRefresh: Boolean = false,
+        requestedIndex: Int? = null
+    ) {
         Timber.tag(TAG)
             .d("updateWeek called with week: $weekString, isGoBackAction: $isGoBackAction")
+
+        val currentState = _uiState.value
+        if (currentState is TimetableUiState.Success && !forceRefresh && currentState.weekString == weekString) {
+            Timber.tag(TAG).d("Already showing the requested week! Just updating index.")
+
+            viewModelScope.launch(Dispatchers.Default) {
+                _uiState.value = currentState.copy(
+                    index = requestedIndex ?: getIndex(
+                        weekString,
+                        isGoBackAction,
+                        currentState.week
+                    )
+                )
+            }
+
+            return
+        }
+
         viewModelScope.launch(Dispatchers.Default) {
             timetableRepository.getWeek(weekString.toString()).collect { result ->
                 result.onSuccess { week ->
                     val groupedWeek = week.groupedForTimetable()
 
-                    val now = LocalDate.now()
+                    val index = requestedIndex ?: getIndex(weekString, isGoBackAction, groupedWeek)
 
-                    val index = if (weekString == WeekString.fromDateSmart(now)) {
-                        if (now.dayOfWeek.value >= 6) {
-                            0
-                        } else {
-                            now.dayOfWeek.value - 1
-                        }
-                    } else {
-                        if (isGoBackAction) {
-                            groupedWeek.days.size - 1
-                        } else {
-                            0
-                        }
-                    }
-
-                    _uiState.update { TimetableUiState.Success(groupedWeek, index) }
+                    _uiState.update { TimetableUiState.Success(groupedWeek, index, weekString) }
                 }.onFailure { throwable ->
                     Timber.tag(TAG).e(throwable, "updateWeek failed")
                     _uiState.update { TimetableUiState.Error(throwable) }
@@ -74,14 +109,7 @@ class TimetableViewModel @Inject constructor(
     fun goToPreviousWeek() {
         val currentState = _uiState.value
         if (currentState is TimetableUiState.Success) {
-            val currentWeek = currentState.week
-            val firstDay = currentWeek.days.firstOrNull()?.date
-            val previousWeek = if (firstDay == null) {
-                Timber.tag(TAG).w("Current week has no days, settings to week before current")
-                WeekString.fromDateSmart(LocalDate.now()).previousWeek()
-            } else {
-                WeekString.fromDate(firstDay.toJavaLocalDate()).previousWeek()
-            }
+            val previousWeek = currentState.weekString.previousWeek()
             updateWeek(previousWeek, isGoBackAction = true)
         }
     }
@@ -89,15 +117,26 @@ class TimetableViewModel @Inject constructor(
     fun goToNextWeek() {
         val currentState = _uiState.value
         if (currentState is TimetableUiState.Success) {
-            val currentWeek = currentState.week
-            val firstDay = currentWeek.days.firstOrNull()?.date
-            val previousWeek = if (firstDay == null) {
-                Timber.tag(TAG).w("Current week has no days, settings to week before current")
-                WeekString.fromDateSmart(LocalDate.now()).nextWeek()
+            val nextWeek = currentState.weekString.nextWeek()
+            updateWeek(nextWeek, isGoBackAction = false)
+        }
+    }
+
+    private fun getIndex(
+        weekString: WeekString,
+        isGoBackAction: Boolean = false,
+        groupedWeek: SchoolWeek
+    ): Int {
+        val now = LocalDate.now()
+
+        return if (weekString == WeekString.fromDate(now)) {
+            min(now.dayOfWeek.value - 1, groupedWeek.days.size - 1)
+        } else {
+            if (isGoBackAction) {
+                groupedWeek.days.size - 1
             } else {
-                WeekString.fromDate(firstDay.toJavaLocalDate()).nextWeek()
+                0
             }
-            updateWeek(previousWeek, isGoBackAction = false)
         }
     }
 
@@ -109,7 +148,11 @@ class TimetableViewModel @Inject constructor(
 
 sealed interface TimetableUiState {
     data object Loading : TimetableUiState
-    data class Success(val week: SchoolWeek, val index: Int /*TODO: , val isLoading: Boolean*/) :
+    data class Success(
+        val week: SchoolWeek,
+        val index: Int,
+        val weekString: WeekString /*TODO: , val isLoading: Boolean*/
+    ) :
         TimetableUiState
 
     data class Error(val error: Throwable) : TimetableUiState

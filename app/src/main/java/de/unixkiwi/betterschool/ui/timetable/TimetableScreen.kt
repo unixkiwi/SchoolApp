@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.unixkiwi.betterschool.R
-import de.unixkiwi.betterschool.utils.WeekString
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.format
 import kotlinx.datetime.format.MonthNames
@@ -39,12 +38,8 @@ fun TimetableScreen(viewModel: TimetableViewModel = hiltViewModel()) {
         onPageChanged = { viewModel.updateSelectedPage(it) },
         onPrevWeekBtnClick = { viewModel.goToPreviousWeek() },
         onNextWeekBtnClick = { viewModel.goToNextWeek() },
-        onCurrentDayBtnClick = {
-            viewModel.updateWeek(
-                WeekString.fromDateSmart(java.time.LocalDate.now()),
-                false
-            )
-        }
+        onCurrentDayBtnClick = { viewModel.goToCurrentDay() },
+        onUpdateBtnClick = { viewModel.updateCurrentWeek() }
     )
 }
 
@@ -56,6 +51,7 @@ private fun TimetableScreen(
     onPrevWeekBtnClick: () -> Unit,
     onNextWeekBtnClick: () -> Unit,
     onCurrentDayBtnClick: () -> Unit,
+    onUpdateBtnClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -86,7 +82,7 @@ private fun TimetableScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = {}) {
+                    IconButton(onClick = onUpdateBtnClick) {
                         Icon(
                             painter = painterResource(R.drawable.ic_refresh_rounded_24dp),
                             contentDescription = null

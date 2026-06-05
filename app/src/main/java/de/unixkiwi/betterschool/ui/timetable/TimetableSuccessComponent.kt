@@ -13,6 +13,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -29,65 +30,73 @@ fun TimetableSuccessComponent(
     onCurrentDayBtnClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val pagerState =
-        rememberPagerState(
-            pageCount = { uiState.week.days.size },
-            initialPage = uiState.index
-        )
+    key(uiState.weekString) {
+        val pagerState =
+            rememberPagerState(
+                pageCount = { uiState.week.days.size },
+                initialPage = uiState.index
+            )
 
-    LaunchedEffect(pagerState.currentPage) {
-        onPageChanged(pagerState.currentPage)
-    }
-
-    Box {
-        HorizontalFloatingToolbar(
-            modifier =
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .offset(y = -ScreenOffset)
-                    .zIndex(1f),
-            colors = FloatingToolbarDefaults.standardFloatingToolbarColors(),
-            floatingActionButton = {
-                FloatingActionButton(
-                    onClick = onCurrentDayBtnClick,
-                    content = {
-                        Icon(
-                            painterResource(R.drawable.calendar_month), null
-                        )
-                    })
-            },
-            expanded = true
-        ) {
-            listOf(
-                R.drawable.arrow_back_24px,
-                R.drawable.arrow_forward_24px
-            ).forEachIndexed { index, icon ->
-                IconButton(onClick = {
-                    if (index == 0) {
-                        onPrevWeekBtnClick()
-                    } else {
-                        onNextWeekBtnClick()
-                    }
-                }) {
-                    Icon(
-                        painterResource(icon),
-                        null
-                    )
-                }
+        LaunchedEffect(uiState.weekString, uiState.index) {
+            if (pagerState.currentPage != uiState.index) {
+                pagerState.scrollToPage(uiState.index)
             }
         }
 
-        HorizontalPager(
-            state = pagerState,
-            modifier = modifier
-        ) { page ->
-            if (uiState.week.days[page].lessons.isEmpty()) {
-                TimetableEmptyDayScreen()
-            } else
-                TimetableSuccessList(
-                    uiState = uiState,
-                    page = page
-                )
+        LaunchedEffect(pagerState.currentPage) {
+            onPageChanged(pagerState.currentPage)
+        }
+
+        Box {
+            HorizontalFloatingToolbar(
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .offset(y = -ScreenOffset)
+                        .zIndex(1f),
+                colors = FloatingToolbarDefaults.standardFloatingToolbarColors(),
+                floatingActionButton = {
+                    FloatingActionButton(
+                        onClick = onCurrentDayBtnClick,
+                        content = {
+                            Icon(
+                                painterResource(R.drawable.calendar_month), null
+                            )
+                        })
+                },
+                expanded = true
+            ) {
+                listOf(
+                    R.drawable.arrow_back_24px,
+                    R.drawable.arrow_forward_24px
+                ).forEachIndexed { index, icon ->
+                    IconButton(onClick = {
+                        if (index == 0) {
+                            onPrevWeekBtnClick()
+                        } else {
+                            onNextWeekBtnClick()
+                        }
+                    }) {
+                        Icon(
+                            painterResource(icon),
+                            null
+                        )
+                    }
+                }
+            }
+
+            HorizontalPager(
+                state = pagerState,
+                modifier = modifier
+            ) { page ->
+                if (uiState.week.days[page].lessons.isEmpty()) {
+                    TimetableEmptyDayScreen()
+                } else
+                    TimetableSuccessList(
+                        uiState = uiState,
+                        page = page
+                    )
+            }
         }
     }
 }
