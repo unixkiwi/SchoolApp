@@ -38,16 +38,17 @@ class TimetableViewModel @Inject constructor(
         }
     }
 
-    fun updateWeek(week: WeekString, isGoBackAction: Boolean = false) {
-        Timber.tag(TAG).d("updateWeek called with week: $week, isGoBackAction: $isGoBackAction")
+    fun updateWeek(weekString: WeekString, isGoBackAction: Boolean = false) {
+        Timber.tag(TAG)
+            .d("updateWeek called with week: $weekString, isGoBackAction: $isGoBackAction")
         viewModelScope.launch(Dispatchers.Default) {
-            timetableRepository.getWeek(week.toString()).collect { result ->
+            timetableRepository.getWeek(weekString.toString()).collect { result ->
                 result.onSuccess { week ->
                     val groupedWeek = week.groupedForTimetable()
 
                     val now = LocalDate.now()
 
-                    val index = if (week == WeekString.fromDateSmart(now)) {
+                    val index = if (weekString == WeekString.fromDateSmart(now)) {
                         if (now.dayOfWeek.value >= 6) {
                             0
                         } else {
