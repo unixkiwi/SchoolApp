@@ -143,15 +143,43 @@ class TimetableRepository(
                             }
                         )
                     },
-                    notes = day.notes.map { note ->
-                        SchoolJournalNote(
-                            description = note.description ?: SchoolJournalNote().description,
-                            type = note.type.name ?: SchoolJournalNote().type
-                        )
-                    }
+                    notes = processNotes(day.notes)
                 )
             }
         )
+    }
+
+    private fun processNotes(notes: List<BesteSchuleJournalNote>): List<SchoolJournalNote> {
+        val tempNotes = mutableListOf<SchoolJournalNote>()
+
+        val notesBundled = mutableListOf<SchoolJournalNote>()
+
+        for (note in notes) {
+            if (note.description.isNullOrEmpty()) {
+                if (tempNotes.isNotEmpty()) {
+                    notesBundled += SchoolJournalNote(description = tempNotes.joinToString(separator = "\n") { it.description })
+                    tempNotes.clear()
+                }
+            } else {
+                tempNotes += SchoolJournalNote(description = note.description)
+            }
+        }
+
+        if (tempNotes.isNotEmpty()) {
+            notesBundled += SchoolJournalNote(description = tempNotes.joinToString(separator = "\n") { it.description })
+            tempNotes.clear()
+        }
+
+        //TODO settings for bundled vs separate settings
+        val notesSeparated = notes.filter { !it.description.isNullOrEmpty() }
+            .map {
+                SchoolJournalNote(
+                    description = it.description ?: "No Content",
+                    type = it.type.name ?: "No Type"
+                )
+            }
+
+        return notesBundled
     }
 
     private fun isOffline(): Boolean {
