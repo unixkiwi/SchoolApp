@@ -10,12 +10,16 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import de.unixkiwi.betterschool.core.models.SchoolLesson
+import de.unixkiwi.betterschool.core.models.SchoolLessonStatus
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -23,7 +27,9 @@ fun TimetableListItemBottomSheet(
     lesson: SchoolLesson,
     onDismissRequest: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberBottomSheetState(
+        initialValue = SheetValue.PartiallyExpanded
+    )
 
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -34,7 +40,10 @@ fun TimetableListItemBottomSheet(
         ) {
             Text(
                 lesson.subject.name,
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    textDecoration = if (lesson.status == SchoolLessonStatus.CANCELED) TextDecoration.LineThrough else null,
+                    color = if (lesson.status == SchoolLessonStatus.CANCELED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                ),
             )
             Spacer(modifier = Modifier.height(4.dp))
 
@@ -151,7 +160,7 @@ private fun <T> TimetableListItemBottomSheetSection(
     title: String,
     items: List<T>,
     modifier: Modifier = Modifier,
-    itemSpacing: androidx.compose.ui.unit.Dp = 2.dp,
+    itemSpacing: Dp = 2.dp,
     itemContent: @Composable (item: T, index: Int, count: Int) -> Unit,
 ) {
     if (items.isEmpty()) {
