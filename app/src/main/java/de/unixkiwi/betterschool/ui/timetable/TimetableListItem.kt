@@ -114,7 +114,7 @@ fun TimetableListItem(
         },
         content = {
             Text(
-                if (lesson.subject.name.length > 35) lesson.subject.shortName else lesson.subject.name,
+                if (lesson.subject.name.length > 20) lesson.subject.shortName else lesson.subject.name,
                 style = if (lesson.status == SchoolLessonStatus.CANCELED) MaterialTheme.typography.headlineMedium.copy(
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     textDecoration = TextDecoration.LineThrough
