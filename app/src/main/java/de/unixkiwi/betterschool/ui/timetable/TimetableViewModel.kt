@@ -92,8 +92,10 @@ class TimetableViewModel @Inject constructor(
         }
 
         viewModelScope.launch(Dispatchers.Default) {
-            timetableRepository.getWeek(weekString.toString(), useLocal = forceRefresh)
+            timetableRepository.getWeek(weekString.toString(), useLocal = !forceRefresh)
                 .collect { result ->
+                    _uiState.update { it.copy(loading = true) }
+
                     result.onSuccess { timetableWeekResult ->
                         when (timetableWeekResult) {
                             is TimetableWeekResult.Data -> {
