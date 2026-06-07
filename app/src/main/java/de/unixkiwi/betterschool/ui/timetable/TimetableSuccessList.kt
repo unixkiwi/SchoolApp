@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun TimetableSuccessList(
-    uiState: TimetableUiState.Success,
+    uiState: TimetableUiState,
     page: Int,
     modifier: Modifier = Modifier
 ) {
@@ -38,7 +38,7 @@ fun TimetableSuccessList(
                 modifier = Modifier.padding(bottom = 8.dp, start = 8.dp, end = 8.dp)
             )
         }
-        itemsIndexed(uiState.week.days[page].lessons) { index, lesson ->
+        itemsIndexed(uiState.week!!.days[page].lessons) { index, lesson ->
             TimetableListItem(
                 lesson = lesson,
                 index = index,

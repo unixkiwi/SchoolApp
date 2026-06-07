@@ -22,19 +22,19 @@ import de.unixkiwi.betterschool.R
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun TimetableSuccessComponent(
-    uiState: TimetableUiState.Success,
+fun TimetableSuccessScreen(
+    uiState: TimetableUiState,
     onPageChanged: (Int) -> Unit,
     onPrevWeekBtnClick: () -> Unit,
     onNextWeekBtnClick: () -> Unit,
     onCurrentDayBtnClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    key(uiState.weekString) {
+    key(uiState.weekString!!) {
         val pagerState =
             rememberPagerState(
-                pageCount = { uiState.week.days.size },
-                initialPage = uiState.index
+                pageCount = { uiState.week!!.days.size },
+                initialPage = uiState.index!!
             )
 
         LaunchedEffect(uiState.weekString, uiState.index) {
@@ -89,7 +89,7 @@ fun TimetableSuccessComponent(
                 state = pagerState,
                 modifier = modifier
             ) { page ->
-                if (uiState.week.days[page].lessons.isEmpty()) {
+                if (uiState.week!!.days[page].lessons.isEmpty()) {
                     TimetableEmptyDayScreen()
                 } else
                     TimetableSuccessList(

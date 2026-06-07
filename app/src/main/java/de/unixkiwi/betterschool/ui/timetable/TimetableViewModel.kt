@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.unixkiwi.betterschool.core.models.SchoolWeek
-import de.unixkiwi.betterschool.data.auth.AuthRepository
 import de.unixkiwi.betterschool.data.timetable.TimetableRepository
+import de.unixkiwi.betterschool.data.timetable.TimetableWeekResult
 import de.unixkiwi.betterschool.data.timetable.groupedForTimetable
 import de.unixkiwi.betterschool.utils.WeekString
 import kotlinx.coroutines.Dispatchers
@@ -22,18 +22,17 @@ import kotlin.math.min
 @HiltViewModel
 class TimetableViewModel @Inject constructor(
     private val timetableRepository: TimetableRepository,
-    private val authRepo: AuthRepository
 ) : ViewModel() {
     companion object {
         private const val TAG = "TimetableViewModel"
     }
 
-    private val _uiState = MutableStateFlow<TimetableUiState>(TimetableUiState.Loading)
+    private val _uiState = MutableStateFlow(TimetableUiState())
     val uiState: StateFlow<TimetableUiState> = _uiState.asStateFlow()
 
     fun updateSelectedPage(page: Int) {
         val currentState = _uiState.value
-        if (currentState is TimetableUiState.Success) {
+        if (currentState.isSuccess()) {
             _uiState.value = currentState.copy(index = page)
         }
     }
@@ -48,9 +47,9 @@ class TimetableViewModel @Inject constructor(
 
     fun updateCurrentWeek() {
         val currentState = _uiState.value
-        if (currentState is TimetableUiState.Success) {
+        if (currentState.isSuccess()) {
             updateWeek(
-                currentState.weekString,
+                currentState.weekString!!,
                 isGoBackAction = false,
                 forceRefresh = true,
                 requestedIndex = currentState.index
@@ -74,17 +73,19 @@ class TimetableViewModel @Inject constructor(
             .d("updateWeek called with week: $weekString, isGoBackAction: $isGoBackAction")
 
         val currentState = _uiState.value
-        if (currentState is TimetableUiState.Success && !forceRefresh && currentState.weekString == weekString) {
+        if (currentState.isSuccess() && !forceRefresh && currentState.weekString == weekString) {
             Timber.tag(TAG).d("Already showing the requested week! Just updating index.")
 
             viewModelScope.launch(Dispatchers.Default) {
-                _uiState.value = currentState.copy(
-                    index = requestedIndex ?: getIndex(
-                        weekString,
-                        isGoBackAction,
-                        currentState.week
+                _uiState.update {
+                    it.copy(
+                        index = requestedIndex ?: getIndex(
+                            weekString,
+                            isGoBackAction,
+                            currentState.week!!
+                        )
                     )
-                )
+                }
             }
 
             return
@@ -92,15 +93,32 @@ class TimetableViewModel @Inject constructor(
 
         viewModelScope.launch(Dispatchers.Default) {
             timetableRepository.getWeek(weekString.toString()).collect { result ->
-                result.onSuccess { week ->
-                    val groupedWeek = week.groupedForTimetable()
+                result.onSuccess { timetableWeekResult ->
+                    when (timetableWeekResult) {
+                        is TimetableWeekResult.Data -> {
+                            val groupedWeek = timetableWeekResult.week.groupedForTimetable()
 
-                    val index = requestedIndex ?: getIndex(weekString, isGoBackAction, groupedWeek)
+                            val index =
+                                requestedIndex ?: getIndex(weekString, isGoBackAction, groupedWeek)
 
-                    _uiState.update { TimetableUiState.Success(groupedWeek, index, weekString) }
+                            _uiState.update {
+                                it.copy(
+                                    week = groupedWeek,
+                                    index = index,
+                                    weekString = weekString
+                                )
+                            }
+                        }
+
+                        is TimetableWeekResult.Loading -> {
+                            _uiState.update { it.copy(loading = true) }
+                        }
+                    }
+
+
                 }.onFailure { throwable ->
                     Timber.tag(TAG).e(throwable, "updateWeek failed")
-                    _uiState.update { TimetableUiState.Error(throwable) }
+                    _uiState.update { it.copy(error = throwable) }
                 }
             }
         }
@@ -108,7 +126,7 @@ class TimetableViewModel @Inject constructor(
 
     fun goToPreviousWeek() {
         val currentState = _uiState.value
-        if (currentState is TimetableUiState.Success) {
+        if (currentState.weekString != null) {
             val previousWeek = currentState.weekString.previousWeek()
             updateWeek(previousWeek, isGoBackAction = true)
         }
@@ -116,7 +134,7 @@ class TimetableViewModel @Inject constructor(
 
     fun goToNextWeek() {
         val currentState = _uiState.value
-        if (currentState is TimetableUiState.Success) {
+        if (currentState.weekString != null) {
             val nextWeek = currentState.weekString.nextWeek()
             updateWeek(nextWeek, isGoBackAction = false)
         }
@@ -146,14 +164,30 @@ class TimetableViewModel @Inject constructor(
     }
 }
 
-sealed interface TimetableUiState {
-    data object Loading : TimetableUiState
-    data class Success(
-        val week: SchoolWeek,
-        val index: Int,
-        val weekString: WeekString /*TODO: , val isLoading: Boolean*/
-    ) :
-        TimetableUiState
+data class TimetableUiState(
+    val week: SchoolWeek? = null,
+    val index: Int? = null,
+    val weekString: WeekString? = null,
+    val loading: Boolean = true,
+    val error: Throwable? = null
+) {
+    fun isSuccess(): Boolean {
+        return week != null && weekString != null && index != null
+    }
 
-    data class Error(val error: Throwable) : TimetableUiState
+    fun isErrorFull(): Boolean {
+        return week == null && weekString == null && error != null
+    }
+
+    fun isErrorWithData(): Boolean {
+        return error != null
+    }
+
+    fun isLoadingFull(): Boolean {
+        return loading && week == null && weekString == null
+    }
+
+    fun isLoadingWithData(): Boolean {
+        return loading && week != null && weekString != null
+    }
 }

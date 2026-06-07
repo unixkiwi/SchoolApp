@@ -36,7 +36,9 @@ class TimetableRepository(
         weekId: String,
         filterYear: Int? = null,
         useLocal: Boolean = true
-    ): Flow<Result<SchoolWeek>> = flow {
+    ): Flow<Result<TimetableWeekResult>> = flow {
+        emit(Result.success(TimetableWeekResult.Loading()))
+
         val authHeader = authRepo.getAuthHeader()
         if (authHeader.isNullOrEmpty()) {
             emit(Result.failure(Throwable("Token was null!")))
@@ -47,19 +49,24 @@ class TimetableRepository(
 
         val cacheKey = "${weekId}__${yearId}"
 
-        var emittedFromCache = false
-
         if (useLocal) {
             try {
                 Timber.v("Getting timetable from local!")
                 val week = cache.get(cacheKey)?.let { Json.decodeFromString<SchoolWeek>(it) }
                 if (week != null) {
+                    val mobileDataActive = isMobileDataActive()
                     Timber.i("Got timetable stuff from cache (${cacheKey})")
-                    emit(Result.success(week))
-                    emittedFromCache = true
-                }
-                if (isMobileDataActive() && week != null) return@flow
-                else if (week == null) {
+                    emit(
+                        Result.success(
+                            TimetableWeekResult.Data(
+                                week,
+                                !mobileDataActive /*TODO mobile data setting */
+                            )
+                        )
+                    )
+
+                    if (mobileDataActive) return@flow
+                } else {
                     Timber.e("Timetable local null")
                     if (isMobileDataActive()) {
                         emit(Result.failure(Throwable("Cache is null!")))
@@ -91,11 +98,11 @@ class TimetableRepository(
                 Timber.e("YearID null, not caching!")
             }
 
-            emit(Result.success(schoolWeek))
+            emit(Result.success(TimetableWeekResult.Data(schoolWeek, false)))
             return@flow
         } catch (e: Exception) {
             Timber.e(e)
-            if (!emittedFromCache) emit(Result.failure(e))
+            emit(Result.failure(e))
         }
 
         return@flow

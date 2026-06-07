@@ -58,8 +58,8 @@ private fun TimetableScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    if (uiState is TimetableUiState.Success) {
-                        val date = uiState.week.days[uiState.index].date?.format(
+                    if (uiState.isSuccess()) {
+                        val date = uiState.week!!.days[uiState.index!!].date?.format(
                             LocalDate.Format {
                                 day()
                                 char('.')
@@ -90,11 +90,10 @@ private fun TimetableScreen(
                     }
                 }
             )
-        },
-
-        ) { innerPad ->
-        when (uiState) {
-            is TimetableUiState.Loading -> Column(
+        }
+    ) { innerPad ->
+        if (uiState.isLoadingFull()) {
+            Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier
@@ -103,24 +102,22 @@ private fun TimetableScreen(
             ) {
                 ContainedLoadingIndicator(modifier = Modifier.size(120.dp))
             }
-
-            is TimetableUiState.Error -> Box(
+        } else if (uiState.isErrorFull()) {
+            Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.padding(innerPad)
             ) { Text("Error: ${uiState.error}") }
-
-            is TimetableUiState.Success -> {
-                TimetableSuccessComponent(
-                    uiState,
-                    onPageChanged,
-                    onPrevWeekBtnClick,
-                    onNextWeekBtnClick,
-                    onCurrentDayBtnClick,
-                    Modifier
-                        .fillMaxSize()
-                        .padding(innerPad)
-                )
-            }
+        } else if (uiState.isSuccess()) {
+            TimetableSuccessScreen(
+                uiState,
+                onPageChanged,
+                onPrevWeekBtnClick,
+                onNextWeekBtnClick,
+                onCurrentDayBtnClick,
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPad)
+            )
         }
     }
 }
