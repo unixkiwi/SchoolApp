@@ -92,34 +92,39 @@ class TimetableViewModel @Inject constructor(
         }
 
         viewModelScope.launch(Dispatchers.Default) {
-            timetableRepository.getWeek(weekString.toString()).collect { result ->
-                result.onSuccess { timetableWeekResult ->
-                    when (timetableWeekResult) {
-                        is TimetableWeekResult.Data -> {
-                            val groupedWeek = timetableWeekResult.week.groupedForTimetable()
+            timetableRepository.getWeek(weekString.toString(), useLocal = forceRefresh)
+                .collect { result ->
+                    result.onSuccess { timetableWeekResult ->
+                        when (timetableWeekResult) {
+                            is TimetableWeekResult.Data -> {
+                                val groupedWeek = timetableWeekResult.week.groupedForTimetable()
 
-                            val index =
-                                requestedIndex ?: getIndex(weekString, isGoBackAction, groupedWeek)
+                                val index =
+                                    requestedIndex ?: getIndex(
+                                        weekString,
+                                        isGoBackAction,
+                                        groupedWeek
+                                    )
 
-                            _uiState.update {
-                                it.copy(
-                                    week = groupedWeek,
-                                    index = index,
-                                    weekString = weekString,
-                                    loading = timetableWeekResult.loading
-                                )
+                                _uiState.update {
+                                    it.copy(
+                                        week = groupedWeek,
+                                        index = index,
+                                        weekString = weekString,
+                                        loading = timetableWeekResult.loading
+                                    )
+                                }
+                            }
+
+                            is TimetableWeekResult.Loading -> {
+                                _uiState.update { it.copy(loading = it.loading) }
                             }
                         }
-
-                        is TimetableWeekResult.Loading -> {
-                            _uiState.update { it.copy(loading = it.loading) }
-                        }
+                    }.onFailure { throwable ->
+                        Timber.tag(TAG).e(throwable, "updateWeek failed")
+                        _uiState.update { it.copy(error = throwable) }
                     }
-                }.onFailure { throwable ->
-                    Timber.tag(TAG).e(throwable, "updateWeek failed")
-                    _uiState.update { it.copy(error = throwable) }
                 }
-            }
         }
     }
 
