@@ -105,17 +105,16 @@ class TimetableViewModel @Inject constructor(
                                 it.copy(
                                     week = groupedWeek,
                                     index = index,
-                                    weekString = weekString
+                                    weekString = weekString,
+                                    loading = timetableWeekResult.loading
                                 )
                             }
                         }
 
                         is TimetableWeekResult.Loading -> {
-                            _uiState.update { it.copy(loading = true) }
+                            _uiState.update { it.copy(loading = it.loading) }
                         }
                     }
-
-
                 }.onFailure { throwable ->
                     Timber.tag(TAG).e(throwable, "updateWeek failed")
                     _uiState.update { it.copy(error = throwable) }

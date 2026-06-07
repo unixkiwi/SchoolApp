@@ -70,6 +70,7 @@ class TimetableRepository(
                     Timber.e("Timetable local null")
                     if (isMobileDataActive()) {
                         emit(Result.failure(Throwable("Cache is null!")))
+                        emit(Result.success(TimetableWeekResult.Loading(false)))
                         return@flow
                     }
                 }
@@ -77,6 +78,7 @@ class TimetableRepository(
                 Timber.e("Local cache request failed: $e")
                 if (isMobileDataActive()) {
                     emit(Result.failure(e))
+                    emit(Result.success(TimetableWeekResult.Loading(false)))
                     return@flow
                 }
             }
@@ -105,6 +107,7 @@ class TimetableRepository(
             emit(Result.failure(e))
         }
 
+        emit(Result.success(TimetableWeekResult.Loading(false)))
         return@flow
     }
 
