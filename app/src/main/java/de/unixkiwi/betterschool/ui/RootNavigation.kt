@@ -18,9 +18,6 @@ fun RootNavigation(navController: NavHostController) {
                 }
             })
         }
-        composable(Screen.NavbarContainer.route) {
-            NavbarScreen()
-        }
         composable(Screen.Timetable.route) {
             TimetableScreen()
         }
