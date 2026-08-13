@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import de.unixkiwi.betterschool.core.navigation.Screen
 import de.unixkiwi.betterschool.ui.auth.AuthScreen
+import de.unixkiwi.betterschool.ui.settings.SettingsScreen
 import de.unixkiwi.betterschool.ui.timetable.TimetableScreen
 
 @Composable
@@ -19,7 +20,16 @@ fun RootNavigation(navController: NavHostController) {
             })
         }
         composable(Screen.Timetable.route) {
-            TimetableScreen()
+            TimetableScreen(
+                onSettingsButtonClicked = {
+                    navController.navigate(Screen.Settings.route)
+                }
+            )
+        }
+        composable(Screen.Settings.route) {
+            SettingsScreen(
+
+            )
         }
     }
 }

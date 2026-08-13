@@ -42,11 +42,15 @@ import kotlinx.datetime.format.char
 
 
 @Composable
-fun TimetableScreen(viewModel: TimetableViewModel = hiltViewModel()) {
+fun TimetableScreen(
+    onSettingsButtonClicked: () -> Unit,
+    viewModel: TimetableViewModel = hiltViewModel()
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     TimetableScreen(
         uiState = uiState,
+        onSettingsButtonClicked = onSettingsButtonClicked,
         onPageChanged = { viewModel.updateSelectedPage(it) },
         onPrevWeekBtnClick = { viewModel.goToPreviousWeek() },
         onNextWeekBtnClick = { viewModel.goToNextWeek() },
@@ -59,6 +63,7 @@ fun TimetableScreen(viewModel: TimetableViewModel = hiltViewModel()) {
 @Composable
 private fun TimetableScreen(
     uiState: TimetableUiState,
+    onSettingsButtonClicked: () -> Unit,
     onPageChanged: (Int) -> Unit,
     onPrevWeekBtnClick: () -> Unit,
     onNextWeekBtnClick: () -> Unit,
@@ -98,7 +103,8 @@ private fun TimetableScreen(
                 },
                 navigationIcon = {
                     IconButton(
-                        onClick = {}, shape = MaterialShapes.Cookie4Sided.toShape(),
+                        onClick = onSettingsButtonClicked,
+                        shape = MaterialShapes.Cookie4Sided.toShape(),
                         colors = IconButtonDefaults.iconButtonColors().copy(
                             containerColor = MaterialTheme.colorScheme.secondary,
                             contentColor = MaterialTheme.colorScheme.onSecondary
