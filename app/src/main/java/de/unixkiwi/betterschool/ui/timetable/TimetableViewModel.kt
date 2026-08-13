@@ -31,9 +31,8 @@ class TimetableViewModel @Inject constructor(
     val uiState: StateFlow<TimetableUiState> = _uiState.asStateFlow()
 
     fun updateSelectedPage(page: Int) {
-        val currentState = _uiState.value
-        if (currentState.isSuccess()) {
-            _uiState.value = currentState.copy(index = page)
+        if (_uiState.value.isSuccess()) {
+            _uiState.update { it.copy(index = page) }
         }
     }
 
