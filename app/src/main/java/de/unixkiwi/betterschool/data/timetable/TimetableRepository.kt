@@ -45,7 +45,7 @@ class TimetableRepository(
             return@flow
         }
 
-        val yearId: Int? = filterYear ?: yearsRepo.getCurrentYear().getOrNull()?.id
+        val yearId: Int? = filterYear ?: yearsRepo.getCurrentYear(!useLocal).getOrNull()?.id
 
         val cacheKey = "${weekId}__${yearId}"
 

@@ -12,15 +12,17 @@ class YearsRepository(
     private val authRepo: AuthRepository,
     private val cache: ApiCacheFileManager
 ) {
-    private var lastCache = LocalDate.now
     private val cacheKey = "years"
 
-    suspend fun getCurrentYear(): Result<BesteSchuleYear> {
-        return getYearForDate(LocalDate.now)
+    suspend fun getCurrentYear(forceRefresh: Boolean = false): Result<BesteSchuleYear> {
+        return getYearForDate(LocalDate.now, forceRefresh)
     }
 
-    suspend fun getYearForDate(date: LocalDate): Result<BesteSchuleYear> {
-        val years = getYears()
+    suspend fun getYearForDate(
+        date: LocalDate,
+        forceRefresh: Boolean = false
+    ): Result<BesteSchuleYear> {
+        val years = getYears(forceRefresh)
         val yearsList = years.getOrNull()
             ?: return Result.failure(Throwable("Failure while calling getYears(): ${years.exceptionOrNull()?.message}"))
 
@@ -33,7 +35,7 @@ class YearsRepository(
 
     suspend fun getYears(forceRefresh: Boolean = false): Result<List<BesteSchuleYear>> {
         val shouldUseRemote =
-            forceRefresh //FIXME nonsense && LocalDate.now < lastCache.plus(3, DateTimeUnit.DAY)
+            forceRefresh //TODO cache older than 3 days
 
         if (shouldUseRemote) {
             try {
@@ -41,7 +43,6 @@ class YearsRepository(
                 return if (authHeader.isNullOrEmpty()) {
                     Result.failure(Throwable("Token was null!"))
                 } else {
-                    lastCache = LocalDate.now
                     val years = remote.getYears(authHeader).data
                     if (years.isNotEmpty()) cache.store(cacheKey, Json.encodeToString(years))
 
