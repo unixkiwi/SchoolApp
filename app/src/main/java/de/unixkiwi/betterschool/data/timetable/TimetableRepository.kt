@@ -97,7 +97,7 @@ class TimetableRepository(
                 cache.store(cacheKey, Json.encodeToString(schoolWeek))
                 Timber.i("Cached timetabled data for $cacheKey")
             } else {
-                Timber.e("YearID null, not caching!")
+                Timber.e("YearID null, not caching timetable!")
             }
 
             emit(Result.success(TimetableWeekResult.Data(schoolWeek, false)))
