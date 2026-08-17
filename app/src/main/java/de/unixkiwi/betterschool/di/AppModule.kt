@@ -17,7 +17,6 @@ import de.unixkiwi.betterschool.core.local.ApiCacheFileManager
 import de.unixkiwi.betterschool.data.auth.AuthRepository
 import de.unixkiwi.betterschool.data.auth.CryptoManager
 import de.unixkiwi.betterschool.data.auth.LocalTokenSource
-import de.unixkiwi.betterschool.data.settings.SettingsRepository
 import de.unixkiwi.betterschool.data.timetable.RemoteTimetableSource
 import de.unixkiwi.betterschool.data.timetable.TimetableRepository
 import de.unixkiwi.betterschool.data.year.RemoteYearSource
@@ -29,7 +28,6 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.create
-import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -43,19 +41,9 @@ object AppModule {
 
     @Provides
     @Singleton
-    @Named("auth")
-    fun provideAuthPreferencesDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
+    fun providePreferencesDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
         return PreferenceDataStoreFactory.create(
             produceFile = { context.preferencesDataStoreFile("auth_preferences") }
-        )
-    }
-
-    @Provides
-    @Singleton
-    @Named("settings")
-    fun provideSettingsDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
-        return PreferenceDataStoreFactory.create(
-            produceFile = { context.preferencesDataStoreFile("user_settings") }
         )
     }
 
@@ -142,18 +130,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideLocalTokenSource(
-        @Named("auth") dataStore: DataStore<Preferences>,
+        dataStore: DataStore<Preferences>,
         cryptoManager: CryptoManager
     ): LocalTokenSource {
         return LocalTokenSource(dataStore, cryptoManager)
-    }
-
-    @Provides
-    @Singleton
-    fun provideSettingsRepository(
-        @Named("settings") dataStore: DataStore<Preferences>
-    ): SettingsRepository {
-        return SettingsRepository(dataStore)
     }
 
     @Provides

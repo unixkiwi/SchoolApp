@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.unixkiwi.betterschool.R
-import de.unixkiwi.betterschool.core.components.MenuButton
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.format
 import kotlinx.datetime.format.MonthNames
@@ -103,7 +102,19 @@ private fun TimetableScreen(
                         Text("Timetable")
                 },
                 navigationIcon = {
-                    MenuButton(onMenuBtnClicked)
+                    IconButton(
+                        onClick = onMenuBtnClicked,
+                        shape = MaterialShapes.Cookie4Sided.toShape(),
+                        colors = IconButtonDefaults.iconButtonColors().copy(
+                            containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = MaterialTheme.colorScheme.onSecondary
+                        )
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.menu_24px),
+                            contentDescription = null
+                        )
+                    }
                 },
                 actions = {
                     IconButton(
