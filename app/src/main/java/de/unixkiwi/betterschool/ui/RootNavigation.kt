@@ -59,7 +59,13 @@ fun RootNavigation(navController: NavHostController) {
                     NavigationDrawerItem(
                         label = { Text("Timetable") },
                         selected = destination == Screen.Timetable.route,
-                        onClick = { /* Handle click */ }
+                        onClick = {
+                            scope.launch {
+                                drawerState.close()
+                                destination = Screen.Timetable.route
+                                navController.navigate(Screen.Timetable.route)
+                            }
+                        }
                     )
                     NavigationDrawerItem(
                         label = { Text("Grades") },
@@ -69,7 +75,13 @@ fun RootNavigation(navController: NavHostController) {
                     NavigationDrawerItem(
                         label = { Text("Settings") },
                         selected = destination == Screen.Settings.route,
-                        onClick = { /* Handle click */ }
+                        onClick = {
+                            scope.launch {
+                                drawerState.close()
+                                destination = Screen.Settings.route
+                                navController.navigate(Screen.Settings.route)
+                            }
+                        }
                     )
                 }
             }
@@ -97,7 +109,15 @@ fun RootNavigation(navController: NavHostController) {
                 })
             }
             composable(Screen.Settings.route) {
-                SettingsScreen()
+                SettingsScreen(onMenuBtnClicked = {
+                    scope.launch {
+                        if (drawerState.isClosed) {
+                            drawerState.open()
+                        } else {
+                            drawerState.close()
+                        }
+                    }
+                })
             }
         }
     }
