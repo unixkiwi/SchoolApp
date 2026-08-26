@@ -17,6 +17,7 @@ import de.unixkiwi.betterschool.core.local.ApiCacheFileManager
 import de.unixkiwi.betterschool.data.auth.AuthRepository
 import de.unixkiwi.betterschool.data.auth.CryptoManager
 import de.unixkiwi.betterschool.data.auth.LocalTokenSource
+import de.unixkiwi.betterschool.data.settings.SettingsRepository
 import de.unixkiwi.betterschool.data.timetable.RemoteTimetableSource
 import de.unixkiwi.betterschool.data.timetable.TimetableRepository
 import de.unixkiwi.betterschool.data.year.RemoteYearSource
@@ -143,5 +144,11 @@ object AppModule {
         localTokenSource: LocalTokenSource
     ): AuthRepository {
         return AuthRepository(authorizationService, localTokenSource)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSettingsRepository(dataStore: DataStore<Preferences>): SettingsRepository {
+        return SettingsRepository(dataStore)
     }
 }
