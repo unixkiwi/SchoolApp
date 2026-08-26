@@ -86,15 +86,23 @@ fun RootNavigation(navController: NavHostController) {
                 })
             }
             composable(Screen.Timetable.route) {
-                TimetableScreen(onMenuBtnClicked = {
-                    scope.launch {
-                        if (drawerState.isClosed) {
-                            drawerState.open()
-                        } else {
-                            drawerState.close()
+                TimetableScreen(
+                    onMenuBtnClicked = {
+                        scope.launch {
+                            if (drawerState.isClosed) {
+                                drawerState.open()
+                            } else {
+                                drawerState.close()
+                            }
+                        }
+                    },
+                    onLoginBtnClick = {
+                        destination = Screen.Auth.route
+                        navController.navigate(Screen.Auth.route) {
+                            popUpTo(Screen.Timetable.route) { inclusive = true }
                         }
                     }
-                })
+                )
             }
             composable(Screen.Settings.route) {
                 SettingsScreen()

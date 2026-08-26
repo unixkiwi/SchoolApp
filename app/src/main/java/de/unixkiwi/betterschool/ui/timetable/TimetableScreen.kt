@@ -7,11 +7,11 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -44,6 +44,7 @@ import kotlinx.datetime.format.char
 @Composable
 fun TimetableScreen(
     onMenuBtnClicked: () -> Unit,
+    onLoginBtnClick: () -> Unit,
     viewModel: TimetableViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -55,7 +56,11 @@ fun TimetableScreen(
         onPrevWeekBtnClick = { viewModel.goToPreviousWeek() },
         onNextWeekBtnClick = { viewModel.goToNextWeek() },
         onCurrentDayBtnClick = { viewModel.goToCurrentDay() },
-        onUpdateBtnClick = { viewModel.updateCurrentWeek() }
+        onUpdateBtnClick = { viewModel.updateCurrentWeek() },
+        onLoginBtnClick = {
+            viewModel.clearToken()
+            onLoginBtnClick()
+        }
     )
 }
 
@@ -69,6 +74,7 @@ private fun TimetableScreen(
     onNextWeekBtnClick: () -> Unit,
     onCurrentDayBtnClick: () -> Unit,
     onUpdateBtnClick: () -> Unit,
+    onLoginBtnClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val infiniteRotation = rememberInfiniteTransition(label = "infiniteRotation")
@@ -150,10 +156,45 @@ private fun TimetableScreen(
                 ContainedLoadingIndicator(modifier = Modifier.size(120.dp))
             }
         } else if (uiState.isErrorFull()) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.padding(innerPad)
-            ) { Text("Error: ${uiState.error}") }
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPad)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_cancel_rounded_24dp),
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.error
+                )
+                Text(
+                    "Something went wrong",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+                Text(
+                    uiState.error?.localizedMessage ?: "Unknown error",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 8.dp, start = 32.dp, end = 32.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Button(
+                    onClick = onUpdateBtnClick,
+                    modifier = Modifier.padding(top = 24.dp)
+                ) {
+                    Text("Retry")
+                }
+                if (uiState.isAuthError()) {
+                    Button(
+                        onClick = onLoginBtnClick,
+                        modifier = Modifier.padding(top = 24.dp)
+                    ) {
+                        Text("Login")
+                    }
+                }
+            }
         } else if (uiState.isSuccess()) {
             TimetableSuccessScreen(
                 uiState,

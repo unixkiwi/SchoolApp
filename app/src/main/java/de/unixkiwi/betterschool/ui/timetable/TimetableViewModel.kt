@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.unixkiwi.betterschool.core.models.SchoolWeek
+import de.unixkiwi.betterschool.data.auth.AuthRepository
 import de.unixkiwi.betterschool.data.timetable.TimetableRepository
 import de.unixkiwi.betterschool.data.timetable.TimetableWeekResult
 import de.unixkiwi.betterschool.data.timetable.groupedForTimetable
@@ -22,6 +23,7 @@ import kotlin.math.min
 @HiltViewModel
 class TimetableViewModel @Inject constructor(
     private val timetableRepository: TimetableRepository,
+    private val authRepo: AuthRepository
 ) : ViewModel() {
     companion object {
         private const val TAG = "TimetableViewModel"
@@ -29,6 +31,10 @@ class TimetableViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(TimetableUiState())
     val uiState: StateFlow<TimetableUiState> = _uiState.asStateFlow()
+
+    fun clearToken() {
+        viewModelScope.launch { authRepo.clearToken() }
+    }
 
     fun updateSelectedPage(page: Int) {
         if (_uiState.value.isSuccess()) {
@@ -118,7 +124,7 @@ class TimetableViewModel @Inject constructor(
                             }
 
                             is TimetableWeekResult.Loading -> {
-                                _uiState.update { it.copy(loading = it.loading) }
+                                _uiState.update { it.copy(loading = timetableWeekResult.loading) }
                             }
                         }
                     }.onFailure { throwable ->
@@ -184,8 +190,17 @@ data class TimetableUiState(
         return week == null && weekString == null && error != null
     }
 
+    fun isAuthError(): Boolean {
+        val msg = error?.message ?: ""
+
+        return msg.contains("401", ignoreCase = true) || msg.contains(
+            "JsonDataException",
+            ignoreCase = true
+        ) || msg.contains("BEGIN_OBJECT but was STRING at path \$", ignoreCase = true)
+    }
+
     fun isErrorWithData(): Boolean {
-        return error != null
+        return isSuccess() && error != null
     }
 
     fun isLoadingFull(): Boolean {
