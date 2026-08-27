@@ -7,12 +7,16 @@ import de.unixkiwi.betterschool.core.CLIENT_ID
 import de.unixkiwi.betterschool.core.REDIRECT_URI
 import de.unixkiwi.betterschool.core.TOKEN_URI
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import net.openid.appauth.AuthorizationRequest
 import net.openid.appauth.AuthorizationResponse
 import net.openid.appauth.AuthorizationService
 import net.openid.appauth.AuthorizationServiceConfiguration
 import net.openid.appauth.CodeVerifierUtil
+import net.openid.appauth.GrantTypeValues
 import net.openid.appauth.ResponseTypeValues
+import net.openid.appauth.TokenRequest
 import timber.log.Timber
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -29,6 +33,8 @@ class AuthRepository(
         AUTHORIZE_URI.toUri(),
         TOKEN_URI.toUri()
     )
+
+    private val refreshMutex = Mutex()
 
     fun createAuthRequestIntent(): Intent {
         val codeVerifier = CodeVerifierUtil.generateRandomCodeVerifier()
@@ -52,7 +58,47 @@ class AuthRepository(
 
     suspend fun getToken(): String? {
         Timber.tag(TAG).d("getToken() called!")
+        if (isTokenExpired()) {
+            refreshMutex.withLock {
+                Timber.tag(TAG).d("Token expired, attempting to refresh")
+                refreshToken()
+            }
+        }
         return localTokenSource.getToken()
+    }
+
+    private suspend fun refreshToken(): String? {
+        val refreshToken = localTokenSource.getRefreshToken() ?: return null
+
+        val tokenResponse = suspendCancellableCoroutine { cont ->
+            val tokenRequest = TokenRequest.Builder(config, CLIENT_ID)
+                .setGrantType(GrantTypeValues.REFRESH_TOKEN)
+                .setRefreshToken(refreshToken)
+                .build()
+
+            authService.performTokenRequest(tokenRequest) { res, ex ->
+                if (!cont.isActive) return@performTokenRequest
+
+                if (ex != null) {
+                    Timber.tag(TAG).e("Refresh failed: $ex")
+                    cont.resume(null)
+                    return@performTokenRequest
+                }
+
+                cont.resume(res)
+            }
+        }
+
+        return if (tokenResponse?.accessToken != null) {
+            val expiryTime = tokenResponse.accessTokenExpirationTime
+            localTokenSource.setToken(tokenResponse.accessToken!!, expiryTime)
+            if (tokenResponse.refreshToken != null) {
+                localTokenSource.setRefreshToken(tokenResponse.refreshToken)
+            }
+            tokenResponse.accessToken
+        } else {
+            null
+        }
     }
 
     suspend fun getAuthHeader(): String? {
@@ -72,7 +118,7 @@ class AuthRepository(
     }
 
     suspend fun getTokenFromAuthResponse(authResponse: AuthorizationResponse) {
-        val tokenData = suspendCancellableCoroutine { cont ->
+        val tokenResponse = suspendCancellableCoroutine { cont ->
             val tokenRequest = authResponse.createTokenExchangeRequest()
 
             authService.performTokenRequest(tokenRequest) { res, ex ->
@@ -84,17 +130,20 @@ class AuthRepository(
                         cont.resumeWithException(ex)
                     }
 
-                    res?.accessToken != null -> {
-                        val expiryTime = res.accessTokenExpirationTime
-                        Timber.tag(TAG).d("Token received with expiry time: $expiryTime")
-                        cont.resume(Pair(res.accessToken!!, expiryTime))
+                    res != null -> {
+                        cont.resume(res)
                     }
 
-                    else -> cont.resumeWithException(IllegalStateException("No access token"))
+                    else -> cont.resumeWithException(IllegalStateException("No response"))
                 }
             }
         }
 
-        localTokenSource.setToken(tokenData.first, tokenData.second)
+        tokenResponse.accessToken?.let {
+            localTokenSource.setToken(it, tokenResponse.accessTokenExpirationTime)
+        }
+        tokenResponse.refreshToken?.let {
+            localTokenSource.setRefreshToken(it)
+        }
     }
 }

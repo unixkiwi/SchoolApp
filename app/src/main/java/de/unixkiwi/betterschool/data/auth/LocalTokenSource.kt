@@ -18,6 +18,7 @@ class LocalTokenSource(
     }
 
     private val TOKEN_KEY = stringPreferencesKey("besteschule_token")
+    private val REFRESH_TOKEN_KEY = stringPreferencesKey("besteschule_refresh_token")
     private val TOKEN_EXPIRY_KEY = longPreferencesKey("besteschule_token_expiry")
 
     suspend fun setToken(token: String, expiryTimeMillis: Long? = null) {
@@ -26,6 +27,18 @@ class LocalTokenSource(
             prefs[TOKEN_KEY] = encryptedToken
             if (expiryTimeMillis != null) {
                 prefs[TOKEN_EXPIRY_KEY] = expiryTimeMillis
+            } else {
+                prefs.remove(TOKEN_EXPIRY_KEY)
+            }
+        }
+    }
+
+    suspend fun setRefreshToken(refreshToken: String?) {
+        dataStore.edit { prefs ->
+            if (refreshToken != null) {
+                prefs[REFRESH_TOKEN_KEY] = cryptoManager.encrypt(refreshToken)
+            } else {
+                prefs.remove(REFRESH_TOKEN_KEY)
             }
         }
     }
@@ -38,13 +51,21 @@ class LocalTokenSource(
             }.firstOrNull()
     }
 
+    suspend fun getRefreshToken(): String? {
+        Timber.tag(TAG).d("getRefreshToken called")
+        return dataStore.data
+            .map { prefs ->
+                prefs[REFRESH_TOKEN_KEY]?.let { cryptoManager.decrypt(it) }
+            }.firstOrNull()
+    }
+
     suspend fun isTokenExpired(): Boolean {
         Timber.tag(TAG).d("isTokenExpired called")
         val expiryTime = dataStore.data
             .map { prefs -> prefs[TOKEN_EXPIRY_KEY] }
             .firstOrNull()
 
-        return if (expiryTime != null) {
+        return if (expiryTime != null && expiryTime != -1L) {
             val isExpired = System.currentTimeMillis() >= expiryTime
             Timber.tag(TAG)
                 .d("Token expiry check: current=${System.currentTimeMillis()}, expiry=$expiryTime, isExpired=$isExpired")
@@ -58,6 +79,7 @@ class LocalTokenSource(
     suspend fun clearToken() {
         dataStore.edit {
             it.remove(TOKEN_KEY)
+            it.remove(REFRESH_TOKEN_KEY)
             it.remove(TOKEN_EXPIRY_KEY)
         }
     }
