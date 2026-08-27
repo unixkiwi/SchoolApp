@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ListItem
@@ -36,7 +38,9 @@ fun TimetableListItemBottomSheet(
         sheetState = sheetState,
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
         ) {
             Text(
                 lesson.subject.name,
@@ -106,23 +110,7 @@ fun TimetableListItemBottomSheet(
                 )
             }
 
-            if (lesson.rooms.isNotEmpty() && lesson.subLessons.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
-            TimetableListItemBottomSheetSection(
-                title = if (lesson.subLessons.size > 1) "Sub-lessons" else "Sub-lesson",
-                items = lesson.subLessons,
-            ) { subLesson, index, count ->
-                TimetableListItem(
-                    lesson = subLesson,
-                    index = index,
-                    listSize = count,
-                    modifier = Modifier.padding(horizontal = 0.dp)
-                )
-            }
-
-            if (lesson.notes.isNotEmpty()) {
+            if (lesson.rooms.isNotEmpty() && lesson.notes.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
@@ -149,6 +137,22 @@ fun TimetableListItemBottomSheet(
                     overlineContent = {
                         Text(note.type, style = MaterialTheme.typography.bodyMedium)
                     }
+                )
+            }
+
+            if (lesson.subLessons.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            TimetableListItemBottomSheetSection(
+                title = if (lesson.subLessons.size > 1) "Sub-lessons" else "Sub-lesson",
+                items = lesson.subLessons,
+            ) { subLesson, index, count ->
+                TimetableListItem(
+                    lesson = subLesson,
+                    index = index,
+                    listSize = count,
+                    modifier = Modifier.padding(horizontal = 0.dp)
                 )
             }
         }
