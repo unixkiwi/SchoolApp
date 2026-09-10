@@ -169,6 +169,10 @@ class TimetableViewModel @Inject constructor(
         }
     }
 
+    fun dismissError() {
+        _uiState.update { it.copy(error = null) }
+    }
+
     init {
         Timber.tag(TAG).d("init called")
         updateWeek(WeekString.fromDateSmart(LocalDate.now()))

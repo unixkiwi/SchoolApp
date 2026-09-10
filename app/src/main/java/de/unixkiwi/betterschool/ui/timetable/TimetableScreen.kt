@@ -70,7 +70,8 @@ fun TimetableScreen(
         onLoginBtnClick = {
             viewModel.clearToken()
             onLoginBtnClick()
-        }
+        },
+        onErrorDismissBtnClick = { viewModel.dismissError() }
     )
 }
 
@@ -85,6 +86,7 @@ private fun TimetableScreen(
     onCurrentDayBtnClick: () -> Unit,
     onUpdateBtnClick: () -> Unit,
     onLoginBtnClick: () -> Unit,
+    onErrorDismissBtnClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val infiniteRotation = rememberInfiniteTransition(label = "infiniteRotation")
@@ -150,7 +152,10 @@ private fun TimetableScreen(
             },
             confirmButton = {
                 Button(
-                    onClick = { showErrorDialog = false }
+                    onClick = {
+                        showErrorDialog = false
+                        onErrorDismissBtnClick()
+                    }
                 ) {
                     Text("Dismiss")
                 }

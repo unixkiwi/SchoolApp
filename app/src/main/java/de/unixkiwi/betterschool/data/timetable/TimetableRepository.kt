@@ -60,7 +60,7 @@ class TimetableRepository(
                         Result.success(
                             TimetableWeekResult.Data(
                                 week,
-                                !mobileDataActive /*TODO mobile data setting */
+                                false //!mobileDataActive /*TODO mobile data setting */
                             )
                         )
                     )
@@ -68,19 +68,19 @@ class TimetableRepository(
                     if (mobileDataActive) return@flow
                 } else {
                     Timber.e("Timetable local null")
-                    if (isMobileDataActive()) {
+                    /*if (isMobileDataActive()) {
                         emit(Result.failure(Throwable("Cache is null!")))
                         emit(Result.success(TimetableWeekResult.Loading(false)))
                         return@flow
-                    }
+                    }*/
                 }
             } catch (e: Exception) {
                 Timber.e("Local cache request failed: $e")
-                if (isMobileDataActive()) {
+                /*if (isMobileDataActive()) {
                     emit(Result.failure(e))
                     emit(Result.success(TimetableWeekResult.Loading(false)))
                     return@flow
-                }
+                }*/
             }
         }
 

@@ -68,7 +68,12 @@ class AuthRepository(
     }
 
     private suspend fun refreshToken(): String? {
-        val refreshToken = localTokenSource.getRefreshToken() ?: return null
+        Timber.tag(TAG).d("Refreshing token...")
+        val refreshToken = localTokenSource.getRefreshToken()
+        if (refreshToken == null) {
+            Timber.tag(TAG).e("Refresh Token is null!")
+            return null
+        }
 
         val tokenResponse = suspendCancellableCoroutine { cont ->
             val tokenRequest = TokenRequest.Builder(config, CLIENT_ID)
@@ -77,7 +82,10 @@ class AuthRepository(
                 .build()
 
             authService.performTokenRequest(tokenRequest) { res, ex ->
-                if (!cont.isActive) return@performTokenRequest
+                if (!cont.isActive) {
+                    Timber.d("Token refresh already running!")
+                    return@performTokenRequest
+                }
 
                 if (ex != null) {
                     Timber.tag(TAG).e("Refresh failed: $ex")
@@ -91,12 +99,22 @@ class AuthRepository(
 
         return if (tokenResponse?.accessToken != null) {
             val expiryTime = tokenResponse.accessTokenExpirationTime
+            Timber.tag(TAG).d(
+                "Refreshed token successfully, ExpiryTime: %s, Token: %s",
+                expiryTime,
+                tokenResponse.accessToken!!
+            )
             localTokenSource.setToken(tokenResponse.accessToken!!, expiryTime)
             if (tokenResponse.refreshToken != null) {
                 localTokenSource.setRefreshToken(tokenResponse.refreshToken)
+            } else {
+                Timber.w("Refresh token from tokenResponse from refreshToken() was null!")
             }
+
             tokenResponse.accessToken
         } else {
+            Timber.tag(TAG).e("Refreshed token, AccessToken from response was null!")
+
             null
         }
     }
